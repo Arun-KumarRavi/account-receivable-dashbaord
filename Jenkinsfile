@@ -27,8 +27,8 @@ pipeline {
         stage('Frontend: Lint & Test') {
             steps {
                 dir('client') {
-                    sh 'npm install'
-                    // Using npx to run eslint without modifying package.json
+                    // npm ci is faster and better for CI environments than npm install
+                    sh 'npm ci'
                     sh 'npx eslint src --quiet || echo "Linting issues found but continuing..."'
                     sh 'npm test -- --watchAll=false --passWithNoTests'
                 }
