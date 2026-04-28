@@ -23,6 +23,26 @@ pipeline {
                 checkout scm
             }
         }
+
+        stage('Install Dependencies') {
+            parallel {
+                stage('Install Frontend Deps') {
+                    steps {
+                        dir('client') {
+                            sh 'npm ci'
+                        }
+                    }
+                }
+                stage('Install Backend Deps') {
+                    steps {
+                        dir('flask-integration') {
+                            sh 'python3 -m venv venv'
+                            sh './venv/bin/pip install flask flask-cors pandas scikit-learn numpy pylint pytest safety'
+                        }
+                    }
+                }
+            }
+        }
     }
 
     post {
