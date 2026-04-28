@@ -109,9 +109,14 @@ pipeline {
             }
         }
 
-        stage('Docker Push') {
+        stage('Docker Push Frontend') {
             steps {
                 sh "docker push ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_FRONTEND}:${IMAGE_TAG}"
+            }
+        }
+
+        stage('Docker Push Backend') {
+            steps {
                 sh "docker push ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_BACKEND}:${IMAGE_TAG}"
             }
         }
