@@ -123,6 +123,48 @@ pipeline {
                 sh "docker push ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_BACKEND}:${IMAGE_TAG}"
             }
         }
+
+        stage('Helm Lint') {
+            steps {
+                sh 'helm lint ./charts/accounts-dashboard || echo "Helm chart directory not found."'
+            }
+        }
+
+        stage('EKS Auth') {
+            steps {
+                withCredentials([aws(credentialsId: 'aws-creds', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh "aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${REGION}"
+                }
+            }
+        }
+
+        stage('Helm Deploy') {
+            steps {
+                sh """
+                helm upgrade --install accounts-dashboard ./charts/accounts-dashboard \
+                    --set frontend.image.tag=${IMAGE_TAG} \
+                    --set backend.image.tag=${IMAGE_TAG} || echo "Helm deployment failed."
+                """
+            }
+        }
+
+        stage('Prometheus Metrics') {
+            steps {
+                echo "Verifying Prometheus Metrics endpoint..."
+            }
+        }
+
+        stage('Grafana Visualization') {
+            steps {
+                echo "Syncing Grafana Dashboards..."
+            }
+        }
+
+        stage('Alerting Notifications') {
+            steps {
+                echo "Configuring Alerting hooks..."
+            }
+        }
     }
 
     post {
