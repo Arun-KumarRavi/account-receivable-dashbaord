@@ -33,7 +33,7 @@ pipeline {
                 dir('client') {
                     // npm ci is faster and better for CI environments than npm install
                     sh 'npm ci'
-                    sh 'npx eslint src --quiet || echo "Linting issues found but continuing..."'
+                    sh 'npx eslint src --quiet'
                     sh 'npm test -- --watchAll=false --passWithNoTests'
                 }
             }
@@ -46,8 +46,8 @@ pipeline {
                     sh """
                     python3 -m venv venv
                     ./venv/bin/pip install flask flask-cors pandas scikit-learn numpy pylint pytest safety
-                    ./venv/bin/python -m pylint *.py --disable=C,R || echo "Linting issues found"
-                    ./venv/bin/python -m pytest || echo "No tests found"
+                    ./venv/bin/python -m pylint *.py --disable=C,R
+                    ./venv/bin/python -m pytest
                     """
                 }
             }
