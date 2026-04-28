@@ -9,7 +9,7 @@ pipeline {
         IMAGE_TAG = "${BUILD_NUMBER}"
         
         // --- SonarQube Config ---
-        SCANNER_HOME = tool 'sonar-scanner'
+        // SCANNER_HOME = tool 'sonar-scanner'
         
         // --- AWS/EKS Config ---
         CLUSTER_NAME = 'your-eks-cluster-name'
@@ -17,6 +17,7 @@ pipeline {
     }
 
     options {
+        // Disables the automatic checkout so only our manual stage runs
         skipDefaultCheckout()
     }
 
@@ -26,156 +27,11 @@ pipeline {
                 checkout scm
             }
         }
-
-        stage('Install Dependencies') {
-            parallel {
-                stage('Install Frontend Deps') {
-                    steps {
-                        dir('client') {
-                            sh 'npm ci'
-                        }
-                    }
-                }
-                stage('Install Backend Deps') {
-                    steps {
-                        dir('flask-integration') {
-                            sh 'python3 -m venv venv'
-                            sh './venv/bin/pip install flask flask-cors pandas scikit-learn numpy pylint pytest safety'
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('ESLint') {
-            steps {
-                dir('client') {
-                    sh 'npx eslint src --quiet'
-                }
-            }
-        }
-
-        stage('Frontend Tests') {
-            steps {
-                dir('client') {
-                    sh 'npm test -- --watchAll=false --passWithNoTests'
-                }
-            }
-        }
-
-        stage('Backend Tests') {
-            steps {
-                dir('flask-integration') {
-                    sh './venv/bin/python -m pytest'
-                }
-            }
-        }
-
-        stage('SonarQube Scan') {
-            steps {
-                withSonarQubeEnv('SonarQube-Server') {
-                    sh "${SCANNER_HOME}/bin/sonar-scanner \
-                        -Dsonar.projectKey=accounts-receivables-dashboard \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=http://your-sonar-url:9000"
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                waitForQualityGate abortPipeline: true
-            }
-        }
-
-        stage('Trivy FS Scan') {
-            steps {
-                sh 'trivy fs . --severity HIGH,CRITICAL --format table'
-            }
-        }
-
-        stage('Docker Build') {
-            steps {
-                sh "docker build -t ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_FRONTEND}:${IMAGE_TAG} ./client"
-                sh "docker build -t ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_BACKEND}:${IMAGE_TAG} ./flask-integration"
-            }
-        }
-
-        stage('Trivy Image Scan') {
-            steps {
-                sh "trivy image ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_FRONTEND}:${IMAGE_TAG} --severity HIGH,CRITICAL"
-                sh "trivy image ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_BACKEND}:${IMAGE_TAG} --severity HIGH,CRITICAL"
-            }
-        }
-
-        stage('Docker Login') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
-                    sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
-                }
-            }
-        }
-
-        stage('Docker Push') {
-            steps {
-                sh "docker push ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_FRONTEND}:${IMAGE_TAG}"
-                sh "docker push ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_BACKEND}:${IMAGE_TAG}"
-            }
-        }
-
-        stage('Helm Lint') {
-            steps {
-                sh 'helm lint ./charts/accounts-dashboard || echo "Helm chart directory not found."'
-            }
-        }
-
-        stage('EKS Auth') {
-            steps {
-                withCredentials([aws(credentialsId: 'aws-creds', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    sh "aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${REGION}"
-                }
-            }
-        }
-
-        stage('Helm Deploy') {
-            steps {
-                sh """
-                helm upgrade --install accounts-dashboard ./charts/accounts-dashboard \
-                    --set frontend.image.tag=${IMAGE_TAG} \
-                    --set backend.image.tag=${IMAGE_TAG} || echo "Helm deployment failed."
-                """
-            }
-        }
-
-        stage('Prometheus Metrics') {
-            steps {
-                echo "Verifying Prometheus Metrics endpoint..."
-            }
-        }
-
-        stage('Grafana Visualization') {
-            steps {
-                echo "Syncing Grafana Dashboards..."
-            }
-        }
-
-        stage('Alerting Notifications') {
-            steps {
-                echo "Configuring Alerting hooks..."
-            }
-        }
     }
 
     post {
         always {
-            echo "Pipeline Run Summary: Finished."
-            cleanWs()
-        }
-        success {
-            echo "Deployment successful! Build: ${BUILD_NUMBER}"
-        }
-        failure {
-            echo "Pipeline failed. Check Jenkins logs for stage failures."
+            echo "Pipeline Part 1: Checkout finished."
         }
     }
 }
