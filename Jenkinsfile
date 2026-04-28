@@ -8,6 +8,9 @@ pipeline {
         DOCKER_HUB_REPO_BACKEND = 'accounts-receivable-backend'
         IMAGE_TAG = "${BUILD_NUMBER}"
         
+        // --- SonarQube Config ---
+        SCANNER_HOME = tool 'sonar-scanner'
+        
         // --- AWS/EKS Config ---
         CLUSTER_NAME = 'your-eks-cluster-name'
         REGION = 'us-east-1'
@@ -71,17 +74,17 @@ pipeline {
 
         stage('SonarQube Scan') {
             steps {
-                echo "Starting SonarQube analysis (Placeholder)..."
-                // withSonarQubeEnv('SonarQube-Server') {
-                //     sh "sonar-scanner -Dsonar.projectKey=accounts-dashboard"
-                // }
+                echo "Starting SonarQube analysis..."
+                withSonarQubeEnv('SonarQube-Server') {
+                    sh "${SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectKey=accounts-dashboard"
+                }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                echo "Checking Quality Gate status (Placeholder)..."
-                // waitForQualityGate abortPipeline: true
+                echo "Checking Quality Gate status..."
+                waitForQualityGate abortPipeline: true
             }
         }
     }
