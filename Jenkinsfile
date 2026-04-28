@@ -130,6 +130,21 @@ pipeline {
             }
         }
 
+        stage('Observability Setup') {
+            steps {
+                withCredentials([aws(credentialsId: 'aws-creds', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh "aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${REGION}"
+                    sh """
+                    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+                    helm repo update
+                    helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
+                        --namespace monitoring \
+                        --create-namespace
+                    """
+                }
+            }
+        }
+
         stage('EKS Auth & Deploy') {
             steps {
                 withCredentials([aws(credentialsId: 'aws-creds', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
