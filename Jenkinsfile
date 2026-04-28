@@ -42,10 +42,10 @@ pipeline {
         stage('Backend: Lint & Test') {
             steps {
                 dir('flask-integration') {
-                    // Using pip3 as it is the standard command on most Jenkins/Linux environments
-                    sh 'pip3 install flask flask-cors pandas scikit-learn numpy pylint pytest safety'
-                    sh 'pylint *.py --disable=C,R || echo "Linting issues found"'
-                    sh 'pytest || echo "No tests found"'
+                    // python3 -m pip is often more reliable than calling pip3 directly
+                    sh 'python3 -m pip install flask flask-cors pandas scikit-learn numpy pylint pytest safety'
+                    sh 'python3 -m pylint *.py --disable=C,R || echo "Linting issues found"'
+                    sh 'python3 -m pytest || echo "No tests found"'
                 }
             }
         }
