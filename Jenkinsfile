@@ -92,6 +92,37 @@ pipeline {
                 sh 'trivy fs . --severity HIGH,CRITICAL --format table || echo "Trivy not found on agent"'
             }
         }
+
+        stage('Docker Build') {
+            steps {
+                script {
+                    sh "docker build -t ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_FRONTEND}:${IMAGE_TAG} ./client"
+                    sh "docker build -t ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_BACKEND}:${IMAGE_TAG} ./flask-integration"
+                }
+            }
+        }
+
+        stage('Trivy Image Scan') {
+            steps {
+                sh "trivy image ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_FRONTEND}:${IMAGE_TAG} --severity HIGH,CRITICAL || echo 'Trivy not found'"
+                sh "trivy image ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_BACKEND}:${IMAGE_TAG} --severity HIGH,CRITICAL || echo 'Trivy not found'"
+            }
+        }
+
+        stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                    sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
+                }
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                sh "docker push ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_FRONTEND}:${IMAGE_TAG}"
+                sh "docker push ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_BACKEND}:${IMAGE_TAG}"
+            }
+        }
     }
 
     post {
