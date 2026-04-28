@@ -68,6 +68,22 @@ pipeline {
                 }
             }
         }
+
+        stage('SonarQube Scan') {
+            steps {
+                echo "Starting SonarQube analysis (Placeholder)..."
+                // withSonarQubeEnv('SonarQube-Server') {
+                //     sh "sonar-scanner -Dsonar.projectKey=accounts-dashboard"
+                // }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                echo "Checking Quality Gate status (Placeholder)..."
+                // waitForQualityGate abortPipeline: true
+            }
+        }
     }
 
     post {
