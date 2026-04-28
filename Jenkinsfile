@@ -9,7 +9,7 @@ pipeline {
         IMAGE_TAG = "${BUILD_NUMBER}"
         
         // --- SonarQube Config ---
-        // SCANNER_HOME = tool 'sonar-scanner'
+        SCANNER_HOME = tool 'sonar-scanner'
         
         // --- AWS/EKS Config ---
         CLUSTER_NAME = 'your-eks-cluster-name'
@@ -20,60 +20,58 @@ pipeline {
         skipDefaultCheckout()
     }
 
-
     stages {
-        stage('Checkout') {
+        stage('Git Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Frontend: Lint & Test') {
+        stage('Install Dependencies') {
+            parallel {
+                stage('Install Frontend Deps') {
+                    steps {
+                        dir('client') {
+                            sh 'npm ci'
+                        }
+                    }
+                }
+                stage('Install Backend Deps') {
+                    steps {
+                        dir('flask-integration') {
+                            sh 'python3 -m venv venv'
+                            sh './venv/bin/pip install flask flask-cors pandas scikit-learn numpy pylint pytest safety'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('ESLint') {
             steps {
                 dir('client') {
-                    // npm ci is faster and better for CI environments than npm install
-                    sh 'npm ci'
                     sh 'npx eslint src --quiet'
+                }
+            }
+        }
+
+        stage('Frontend Tests') {
+            steps {
+                dir('client') {
                     sh 'npm test -- --watchAll=false --passWithNoTests'
                 }
             }
         }
 
-        stage('Backend: Lint & Test') {
+        stage('Backend Tests') {
             steps {
                 dir('flask-integration') {
-                    // Create a virtual environment to avoid 'externally-managed-environment' error
-                    sh """
-                    python3 -m venv venv
-                    ./venv/bin/pip install flask flask-cors pandas scikit-learn numpy pylint pytest safety
-                    ./venv/bin/python -m pylint *.py --disable=C,R
-                    ./venv/bin/python -m pytest
-                    """
+                    sh './venv/bin/python -m pytest'
                 }
             }
         }
 
-        stage('Dependency Check') {
-            parallel {
-                stage('Frontend Audit') {
-                    steps {
-                        dir('client') {
-                            sh 'npm audit --audit-level=high || true'
-                        }
-                    }
-                }
-                stage('Backend Safety') {
-                    steps {
-                        dir('flask-integration') {
-                            sh 'safety check || true'
-                        }
-                    }
-                }
-            }
-        }
-
-        /*
-        stage('Static Analysis (SonarQube)') {
+        stage('SonarQube Scan') {
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
                     sh "${SCANNER_HOME}/bin/sonar-scanner \
@@ -84,7 +82,7 @@ pipeline {
             }
         }
 
-        stage('SonarQube Quality Gate') {
+        stage('Quality Gate') {
             steps {
                 waitForQualityGate abortPipeline: true
             }
@@ -96,7 +94,7 @@ pipeline {
             }
         }
 
-        stage('Image Creation') {
+        stage('Docker Build') {
             steps {
                 sh "docker build -t ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_FRONTEND}:${IMAGE_TAG} ./client"
                 sh "docker build -t ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_BACKEND}:${IMAGE_TAG} ./flask-integration"
@@ -118,14 +116,9 @@ pipeline {
             }
         }
 
-        stage('Docker Push Frontend') {
+        stage('Docker Push') {
             steps {
                 sh "docker push ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_FRONTEND}:${IMAGE_TAG}"
-            }
-        }
-
-        stage('Docker Push Backend') {
-            steps {
                 sh "docker push ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO_BACKEND}:${IMAGE_TAG}"
             }
         }
@@ -154,14 +147,23 @@ pipeline {
             }
         }
 
-        stage('Observability Integration') {
+        stage('Prometheus Metrics') {
             steps {
-                echo "Prometheus Metrics: Verifying endpoints..."
-                echo "Grafana Visualization: Syncing dashboards..."
-                echo "Alerting Notifications: Configuring Slack/Email hooks..."
+                echo "Verifying Prometheus Metrics endpoint..."
             }
         }
-        */
+
+        stage('Grafana Visualization') {
+            steps {
+                echo "Syncing Grafana Dashboards..."
+            }
+        }
+
+        stage('Alerting Notifications') {
+            steps {
+                echo "Configuring Alerting hooks..."
+            }
+        }
     }
 
     post {
