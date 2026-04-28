@@ -7,7 +7,7 @@ WORKDIR /usr/src/app
 # Install system dependencies (for pandas, sklearn)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-&& rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy all backend files
 COPY . .
