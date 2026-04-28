@@ -139,7 +139,8 @@ pipeline {
                     helm repo update
                     helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
                         --namespace monitoring \
-                        --create-namespace
+                        --create-namespace \
+                        --set grafana.service.type=LoadBalancer
                     """
                 }
             }
