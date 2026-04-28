@@ -36,10 +36,18 @@ pipeline {
                 stage('Install Backend Deps') {
                     steps {
                         dir('flask-integration') {
-                            sh 'python3 -m venv venv'
-                            sh './venv/bin/pip install flask flask-cors pandas scikit-learn numpy pylint pytest safety'
+                            // Using --break-system-packages because python3-venv is missing on the agent
+                            sh 'python3 -m pip install --break-system-packages flask flask-cors pandas scikit-learn numpy pylint pytest safety'
                         }
                     }
+                }
+            }
+        }
+
+        stage('ESLint') {
+            steps {
+                dir('client') {
+                    sh 'npx eslint src --quiet'
                 }
             }
         }
@@ -47,7 +55,7 @@ pipeline {
 
     post {
         always {
-            echo "Pipeline Part 1: Checkout finished."
+            echo "Pipeline Part 2 & 3: Finished."
         }
     }
 }
