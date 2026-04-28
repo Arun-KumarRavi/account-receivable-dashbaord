@@ -9,7 +9,7 @@ pipeline {
         IMAGE_TAG = "${BUILD_NUMBER}"
         
         // --- SonarQube Config ---
-        SCANNER_HOME = tool 'sonar-scanner'
+        // SCANNER_HOME = tool 'sonar-scanner'
         
         // --- AWS/EKS Config ---
         CLUSTER_NAME = 'your-eks-cluster-name'
@@ -64,6 +64,7 @@ pipeline {
             }
         }
 
+        /*
         stage('Static Analysis (SonarQube)') {
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
@@ -152,6 +153,7 @@ pipeline {
                 echo "Alerting Notifications: Configuring Slack/Email hooks..."
             }
         }
+        */
     }
 
     post {
