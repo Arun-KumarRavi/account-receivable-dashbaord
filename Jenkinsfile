@@ -130,21 +130,19 @@ pipeline {
             }
         }
 
-        stage('EKS Auth') {
+        stage('EKS Auth & Deploy') {
             steps {
                 withCredentials([aws(credentialsId: 'aws-creds', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    // Update kubeconfig for authentication
                     sh "aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${REGION}"
+                    
+                    // Run Helm deployment while credentials are active
+                    sh """
+                    helm upgrade --install accounts-dashboard ./charts/accounts-dashboard \
+                        --set frontend.image.tag=${IMAGE_TAG} \
+                        --set backend.image.tag=${IMAGE_TAG}
+                    """
                 }
-            }
-        }
-
-        stage('Helm Deploy') {
-            steps {
-                sh """
-                helm upgrade --install accounts-dashboard ./charts/accounts-dashboard \
-                    --set frontend.image.tag=${IMAGE_TAG} \
-                    --set backend.image.tag=${IMAGE_TAG} || echo "Helm deployment failed."
-                """
             }
         }
 
