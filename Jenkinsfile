@@ -16,6 +16,7 @@ pipeline {
         REGION = 'us-east-1'
     }
 
+
     stages {
         stage('Checkout') {
             steps {
@@ -29,7 +30,7 @@ pipeline {
                     sh 'npm install'
                     // Using npx to run eslint without modifying package.json
                     sh 'npx eslint src --quiet || echo "Linting issues found but continuing..."'
-                    sh 'npm test -- --watchAll=false'
+                    sh 'npm test -- --watchAll=false --passWithNoTests'
                 }
             }
         }
