@@ -38,8 +38,7 @@ pipeline {
         stage('Install Backend Deps') {
             steps {
                 dir('flask-integration') {
-                    // Using --break-system-packages because python3-venv is missing on the agent
-                    sh 'python3 -m pip install --break-system-packages flask flask-cors pandas scikit-learn numpy pylint pytest safety'
+                    sh 'python3 -m pip install flask flask-cors pandas scikit-learn numpy pylint pytest safety'
                 }
             }
         }
