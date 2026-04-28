@@ -42,10 +42,13 @@ pipeline {
         stage('Backend: Lint & Test') {
             steps {
                 dir('flask-integration') {
-                    // python3 -m pip is often more reliable than calling pip3 directly
-                    sh 'python3 -m pip install flask flask-cors pandas scikit-learn numpy pylint pytest safety'
-                    sh 'python3 -m pylint *.py --disable=C,R || echo "Linting issues found"'
-                    sh 'python3 -m pytest || echo "No tests found"'
+                    // Create a virtual environment to avoid 'externally-managed-environment' error
+                    sh """
+                    python3 -m venv venv
+                    ./venv/bin/pip install flask flask-cors pandas scikit-learn numpy pylint pytest safety
+                    ./venv/bin/python -m pylint *.py --disable=C,R || echo "Linting issues found"
+                    ./venv/bin/python -m pytest || echo "No tests found"
+                    """
                 }
             }
         }
