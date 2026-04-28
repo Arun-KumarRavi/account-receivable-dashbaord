@@ -16,6 +16,10 @@ pipeline {
         REGION = 'us-east-1'
     }
 
+    options {
+        skipDefaultCheckout()
+    }
+
 
     stages {
         stage('Checkout') {
