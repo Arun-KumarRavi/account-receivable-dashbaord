@@ -3,9 +3,9 @@ pipeline {
 
     environment {
         // --- Registry Config ---
-        DOCKER_HUB_USER = 'your-dockerhub-username'
-        DOCKER_HUB_REPO_FRONTEND = 'accounts-frontend'
-        DOCKER_HUB_REPO_BACKEND = 'accounts-backend'
+        DOCKER_HUB_USER = 'arunkumarravi08'
+        DOCKER_HUB_REPO_FRONTEND = 'accounts-receivable-frontend'
+        DOCKER_HUB_REPO_BACKEND = 'accounts-receivable-backend'
         IMAGE_TAG = "${BUILD_NUMBER}"
         
         // --- SonarQube Config ---
