@@ -51,6 +51,22 @@ pipeline {
                 }
             }
         }
+
+        stage('Frontend Tests') {
+            steps {
+                dir('client') {
+                    sh 'npm test -- --watchAll=false --passWithNoTests'
+                }
+            }
+        }
+
+        stage('Backend Tests') {
+            steps {
+                dir('flask-integration') {
+                    sh 'python3 -m pytest'
+                }
+            }
+        }
     }
 
     post {
