@@ -8,8 +8,8 @@ pipeline {
         DOCKER_HUB_REPO_BACKEND = 'accounts-receivable-backend'
         IMAGE_TAG = "${BUILD_NUMBER}"
         
-        // --- SonarQube Config (Commented until tool name is confirmed) ---
-        // SCANNER_HOME = tool 'sonar-scanner'
+        // --- SonarQube Config ---
+        SCANNER_HOME = tool 'sonar-scanner'
         
         // --- AWS/EKS Config ---
         CLUSTER_NAME = 'your-eks-cluster-name'
@@ -63,7 +63,6 @@ pipeline {
         stage('Backend Tests') {
             steps {
                 dir('flask-integration') {
-                    // Ignore exit code 5 (no tests found) to keep the pipeline moving
                     sh 'python3 -m pytest || echo "No tests found yet."'
                 }
             }
@@ -71,18 +70,20 @@ pipeline {
 
         stage('SonarQube Scan') {
             steps {
-                echo "SonarQube Scan skipped (tool name needs confirmation)..."
-                /*
+                echo "Starting SonarQube analysis..."
                 withSonarQubeEnv('SonarQube-Server') {
-                    sh "${SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectKey=accounts-dashboard"
+                    // Added exclusions to avoid Java analysis errors
+                    sh "${SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=accounts-dashboard \
+                        -Dsonar.exclusions=**/*.java"
                 }
-                */
             }
         }
 
         stage('Quality Gate') {
             steps {
-                echo "Quality Gate skipped..."
+                echo "Checking Quality Gate status..."
+                waitForQualityGate abortPipeline: true
             }
         }
 
